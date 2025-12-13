@@ -1,7 +1,7 @@
 
-
 import React, { useState } from 'react';
 import { User, UserPreferences } from '../../types';
+import { useNotifications } from '../../hooks/useNotifications';
 
 interface ProfileModalProps {
     user: User;
@@ -24,16 +24,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, appScriptUrl, onClose
         emailNotifications: false,
         notifyGeneral: true,
         notifyPetroleum: true,
+        notifyPetroleumV2: true,
         notifyAcid: true
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Access notification hook logic solely for permission request
+    const { requestPushPermission, pushEnabled } = useNotifications(appScriptUrl, user, showToast);
 
     // Only Admins can change Name and Username
     const canEditDetails = user.role === 'Admin';
 
     const handleToggle = (key: keyof UserPreferences) => {
         setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handlePushToggle = async () => {
+        if (!pushEnabled) {
+            const success = await requestPushPermission();
+            if (success) showToast("Device alerts enabled successfully!", "success");
+        } else {
+            showToast("To disable device alerts, please reset permissions in your browser settings.", "info");
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -178,11 +191,35 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, appScriptUrl, onClose
                         {/* NOTIFICATIONS TAB */}
                         {activeTab === 'notifications' && (
                             <div className="space-y-6 animate-fadeIn">
-                                {/* Master Switch */}
+                                {/* Device Alerts Toggle */}
+                                <div className={`flex items-center justify-between p-4 rounded-xl border ${pushEnabled ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${pushEnabled ? 'bg-green-200 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-900 text-sm">Device Push Alerts</div>
+                                            <div className="text-xs text-gray-500">{pushEnabled ? 'System alerts active' : 'Enable browser notifications'}</div>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={pushEnabled}
+                                            onChange={handlePushToggle}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                    </label>
+                                </div>
+
+                                <div className="h-px bg-gray-200"></div>
+
+                                {/* Email Settings */}
                                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-100">
                                     <div>
-                                        <div className="font-bold text-gray-900">Email Notifications</div>
-                                        <div className="text-xs text-gray-500">Receive summaries via email</div>
+                                        <div className="font-bold text-gray-900 text-sm">Email Summaries</div>
+                                        <div className="text-xs text-gray-500">Receive reports via email</div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input 
@@ -196,8 +233,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, appScriptUrl, onClose
                                 </div>
 
                                 {/* Granular Settings */}
-                                <div className={`space-y-4 transition-opacity ${!preferences.emailNotifications ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100 pb-2">Receive alerts for:</h4>
+                                <div className={`space-y-4 transition-opacity pl-2 ${!preferences.emailNotifications ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide pb-1">Email Types:</h4>
                                     
                                     <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition">
                                         <span className="text-sm font-medium text-gray-700">General Inspections</span>
@@ -216,6 +253,16 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, appScriptUrl, onClose
                                             className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
                                             checked={preferences.notifyPetroleum}
                                             onChange={() => handleToggle('notifyPetroleum')}
+                                        />
+                                    </label>
+
+                                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition">
+                                        <span className="text-sm font-medium text-gray-700">Petroleum V2 Inspections</span>
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-5 h-5 text-red-600 rounded border-gray-300 focus:ring-red-500"
+                                            checked={preferences.notifyPetroleumV2}
+                                            onChange={() => handleToggle('notifyPetroleumV2')}
                                         />
                                     </label>
 

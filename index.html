@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#1e3a8a" />
+    <meta name="theme-color" content="#0f172a" />
     <meta name="description" content="Professional Truck & Trailer Inspection App" />
+    
+    <!-- iOS / Mobile Web App Capable Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SafetyCheck" />
+    
     <title>SafetyCheck Pro</title>
     
     <!-- Tailwind CSS (CDN kept for simplicity in this setup, normally built via PostCSS) -->
@@ -32,6 +38,13 @@
       }
       .scrollbar-hide::-webkit-scrollbar { display: none; }
       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* Mobile Optimization: Prevent auto-zoom on inputs */
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
+      }
     </style>
   <script type="importmap">
 {
@@ -46,12 +59,12 @@
   }
 }
 </script>
-<!-- Changed from /index.css to /src/index.css -->
+<!-- FIXED LINE 49: Added /src/ -->
 <link rel="stylesheet" href="/src/index.css">
 </head>
   <body>
     <div id="root"></div>
-    <!-- CHANGED LINE 46: Added /src/ -->
+    <!-- FIXED LINE 51: Added /src/ -->
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

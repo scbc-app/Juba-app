@@ -1,11 +1,12 @@
 
 import React from 'react';
 
-const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error' | 'info', onClose: () => void }) => {
+const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error' | 'info' | 'warning', onClose: () => void }) => {
     const bgColors = {
         success: 'bg-green-600',
         error: 'bg-red-600',
-        info: 'bg-blue-600'
+        info: 'bg-blue-600',
+        warning: 'bg-amber-500'
     };
 
     return (

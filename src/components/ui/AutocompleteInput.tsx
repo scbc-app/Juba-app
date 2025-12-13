@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AutocompleteInputProps {
@@ -11,19 +10,20 @@ interface AutocompleteInputProps {
   isRegNo?: boolean; // If true, enforces uppercase and spacing between letters/numbers
   isTitleCase?: boolean; // If true, enforces Title Case (e.g. John Doe, Lusaka)
   readOnly?: boolean; // If true, input is disabled and cannot be changed
+  error?: boolean;
 }
 
 const AutocompleteInput: React.FC<AutocompleteInputProps> = ({ 
-  label, value, onChange, options = [], placeholder, isRegNo, isTitleCase, readOnly
+  label, value, onChange, options = [], placeholder, isRegNo, isTitleCase, readOnly, error
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Filter options based on input
+  // Filter options based on input - Safely handle non-string data
   const filteredOptions = options.filter(opt => 
-    opt && opt.toLowerCase().includes(value.toLowerCase())
+    opt != null && String(opt).toLowerCase().includes((value || '').toLowerCase())
   );
 
   // Close dropdown when clicking outside
@@ -43,29 +43,16 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     let newVal = e.target.value;
     
     // Auto-formatting for Registration Numbers
-    // Rule: Uppercase + Space between Letters and Numbers
     if (isRegNo) {
-        // 1. Force Uppercase
         newVal = newVal.toUpperCase();
-        
-        // 2. Remove existing non-alphanumeric chars to process raw string
         let raw = newVal.replace(/[^A-Z0-9]/g, '');
-
-        // 3. Logic: Insert space whenever a Letter is followed by a Number
-        // e.g. "AHB1502" -> "AHB 1502"
         raw = raw.replace(/([A-Z])(\d)/g, '$1 $2');
-        
-        // 4. Logic: Insert space whenever a Number is followed by a Letter
-        // e.g. "1502ZM" -> "1502 ZM"
         raw = raw.replace(/(\d)([A-Z])/g, '$1 $2');
-
         newVal = raw;
     }
 
     // Auto-formatting for Title Case (Names, Locations)
     if (isTitleCase && !isRegNo) {
-        // Capitalize first letter of every word, lowercase the rest (smart typing)
-        // actually for typing, we just capitalize the first letter of words to allow user flexibility
         newVal = newVal.replace(/\b\w/g, (char) => char.toUpperCase());
     }
 
@@ -76,7 +63,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
 
   const handleSelect = (option: string) => {
     if (readOnly) return;
-    onChange(option);
+    onChange(String(option)); // Ensure string
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -94,7 +81,6 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
         handleSelect(filteredOptions[highlightedIndex]);
       } else {
-        // Allow selecting the current text as the value (Add New Entry)
         handleSelect(value);
       }
     } else if (e.key === 'Escape') {
@@ -104,7 +90,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 tracking-wide flex justify-between">
+      <label className={`block text-xs font-bold uppercase mb-1.5 tracking-wide flex justify-between ${error ? 'text-red-600' : 'text-gray-500'}`}>
           {label}
           {readOnly && (
               <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -126,19 +112,24 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           className={`w-full p-3.5 border rounded-lg transition-all font-medium 
              ${readOnly 
                ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed focus:outline-none' 
-               : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-800 placeholder-gray-400'
+               : error
+                 ? 'bg-red-50 border-red-300 focus:ring-2 focus:ring-red-200 text-red-900 placeholder-red-300'
+                 : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-800 placeholder-gray-400'
              }
           `}
         />
         {/* Icon based on state */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+        <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${error ? 'text-red-400' : 'text-gray-400'}`}>
             {readOnly ? (
-               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            ) : error ? (
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             ) : (
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             )}
         </div>
       </div>
+      {error && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1 animate-fadeIn">This field is required</p>}
 
       {!readOnly && isOpen && (value.length > 0 || filteredOptions.length > 0) && (
         <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
@@ -158,7 +149,6 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           ) : (
              <li 
                 onMouseDown={(e) => {
-                    // Prevent blur from firing before click
                     e.preventDefault(); 
                     handleSelect(value);
                 }}

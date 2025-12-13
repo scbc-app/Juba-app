@@ -1,5 +1,5 @@
 {
-  "name": "Copy of SafetyCheck Pro",
+  "name": "SafetyCheck Pro",
   "description": "Professional Truck & Trailer Inspection App with AI-powered analysis, PDF generation, and Google Sheets integration.",
   "requestFramePermissions": [
     "camera"
