@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SystemSettings } from '../types';
 import { PRE_CONFIGURED_SCRIPT_URL } from '../constants';
 
@@ -21,17 +21,28 @@ export const useSettings = () => {
     });
 
     const [isSavingSettings, setIsSavingSettings] = useState(false);
+    // Ref to track if we are already fetching to prevent overlap
+    const isFetchingRef = useRef(false);
 
     useEffect(() => {
         if (appScriptUrl) {
+            // Initial fetch
             fetchSystemSettings(appScriptUrl);
+
+            // Poll every 30 seconds to check for Lockdown/Maintenance mode updates
+            const intervalId = setInterval(() => {
+                fetchSystemSettings(appScriptUrl);
+            }, 30000);
+
+            return () => clearInterval(intervalId);
         }
     }, [appScriptUrl]);
 
     const fetchSystemSettings = async (url: string) => {
         if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
-        if (!navigator.onLine) return;
+        if (!navigator.onLine || isFetchingRef.current) return;
 
+        isFetchingRef.current = true;
         try {
             const response = await fetch(`${url}?t=${new Date().getTime()}`);
             if (!response.ok) {
@@ -44,25 +55,34 @@ export const useSettings = () => {
             if (settingsRows && Array.isArray(settingsRows) && settingsRows.length > 1) {
                 const latestConfig = settingsRows[settingsRows.length - 1];
                 if (latestConfig && latestConfig.length >= 2) {
+                    const maintenanceModeVal = String(latestConfig[7]).toUpperCase().trim();
+                    
                     const remoteSettings: SystemSettings = {
                         companyName: latestConfig[0] || 'My Transport Co.',
                         managerEmail: latestConfig[1] || '',
                         companyLogo: (latestConfig[4] && String(latestConfig[4]).length > 100) ? latestConfig[4] : undefined,
                         mobileApkLink: latestConfig[5] || '', 
                         webAppUrl: latestConfig[6] || '',
-                        maintenanceMode: latestConfig[7] === 'TRUE',
+                        maintenanceMode: maintenanceModeVal === 'TRUE',
                         maintenanceMessage: latestConfig[8] || ''
                     };
-                    setSettings(prev => ({ ...prev, ...remoteSettings }));
-                    try {
-                        localStorage.setItem('safetyCheck_settings', JSON.stringify(remoteSettings));
-                    } catch (e) {
-                        // Storage quota exceeded
-                    }
+                    
+                    // Only update state if something changed to prevent re-renders
+                    setSettings(prev => {
+                        if (JSON.stringify(prev) !== JSON.stringify(remoteSettings)) {
+                            try {
+                                localStorage.setItem('safetyCheck_settings', JSON.stringify(remoteSettings));
+                            } catch (e) { /* Storage quota exceeded */ }
+                            return { ...prev, ...remoteSettings };
+                        }
+                        return prev;
+                    });
                 }
             }
         } catch (error) {
             // Silently fail on network error
+        } finally {
+            isFetchingRef.current = false;
         }
     };
 
