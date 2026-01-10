@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">SafetyCheck Pro</string>
-    <string name="title_activity_main">SafetyCheck Pro</string>
-    <string name="package_name">com.juba.safetycheck</string>
-    <string name="custom_url_scheme">com.juba.safetycheck</string>
-</resources>
